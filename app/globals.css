@@ -462,6 +462,9 @@ button {
   gap: 6px;
   align-items: center;
 }
+.tabs .panel-close {
+  display: none;
+}
 .tabs button.on {
   color: var(--paper);
   border-bottom-color: var(--brass);
@@ -956,6 +959,20 @@ button {
   }
   .tabs {
     border-bottom: 0;
+    align-items: center;
+  }
+  .tabs .panel-close {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    margin: 0 8px 0 2px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--paper);
   }
   .panel.open .tabs {
     border-bottom: 1px solid var(--line);

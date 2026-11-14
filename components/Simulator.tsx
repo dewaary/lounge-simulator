@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { EXTRAS, ITEMS, ItemTypeId, MOODS, THEMES, VENUE, eventById, rupiah, themeById } from "@/lib/data";
 import { useCounts, useSim } from "@/lib/store";
 import { buildQuote, whatsappLink } from "@/lib/pricing";
@@ -282,6 +282,28 @@ export default function Simulator() {
   const [quoteOpen, setQuoteOpen] = useState(false);
   const s = useSim();
   const ev = eventById(s.eventId);
+  const panelRef = useRef<HTMLElement>(null);
+  const topRef = useRef<HTMLElement>(null);
+
+  // On phones the sheet and top bar cover part of the canvas: tell the 3D camera
+  // so it frames the room inside the visible area.
+  useEffect(() => {
+    const measure = () => {
+      const mobile = window.innerWidth <= 900;
+      const top = mobile ? (topRef.current?.getBoundingClientRect().bottom ?? 0) : 0;
+      const bottom = mobile && panelRef.current ? window.innerHeight - panelRef.current.getBoundingClientRect().top : 0;
+      useSim.getState().setViewInset({ top, bottom });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (panelRef.current) ro.observe(panelRef.current);
+    if (topRef.current) ro.observe(topRef.current);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.innerWidth <= 900) setSheetOpen(false);
@@ -308,7 +330,7 @@ export default function Simulator() {
         <Scene />
       </div>
 
-      <header className="sim-top">
+      <header className="sim-top" ref={topRef}>
         <button className="btn btn-glass btn-sm" onClick={s.backToIntro}>
           ← Events
         </button>
@@ -325,7 +347,7 @@ export default function Simulator() {
         </div>
       </header>
 
-      <section className={`panel ${sheetOpen ? "open" : ""}`}>
+      <section className={`panel ${sheetOpen ? "open" : ""}`} ref={panelRef}>
         <div className="tabs" role="tablist">
           {TABS.map((t) => (
             <button
@@ -345,6 +367,13 @@ export default function Simulator() {
               {t.id === "guests" && <span className="badge">{s.guests}</span>}
             </button>
           ))}
+          {sheetOpen && (
+            <button className="panel-close" onClick={() => setSheetOpen(false)} aria-label="Close panel">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+          )}
         </div>
         <div className="panel-body">
           <Panel tab={tab} />

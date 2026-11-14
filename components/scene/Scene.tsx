@@ -123,22 +123,44 @@ const PRESETS = {
 } as const;
 
 function CameraRig() {
-  const camera = useThree((s) => s.camera);
+  const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const size = useThree((s) => s.size);
   const controls = useThree((s) => s.controls) as unknown as OrbitImpl | null;
   const preset = useSim((s) => s.camera);
   const nonce = useSim((s) => s.cameraNonce);
+  const inset = useSim((s) => s.viewInset);
   const anim = useRef<{ pos: THREE.Vector3; target: THREE.Vector3; t: number } | null>(null);
 
+  // shift the projection so the scene centre sits in the middle of the visible area
   useEffect(() => {
-    const p = PRESETS[preset];
+    const visible = Math.max(120, size.height - inset.top - inset.bottom);
+    const centre = inset.top + visible / 2;
+    const dy = size.height / 2 - centre;
+    if (Math.abs(dy) > 1) camera.setViewOffset(size.width, size.height, 0, dy, size.width, size.height);
+    else camera.clearViewOffset();
+    camera.updateProjectionMatrix();
+  }, [camera, size.width, size.height, inset.top, inset.bottom]);
+
+  useEffect(() => {
     const portrait = size.width < size.height;
-    const k = preset === "guest" ? 1 : portrait ? (preset === "top" ? 2.1 : 1.9) : size.width < 900 ? 1.2 : 1;
-    const pos = new THREE.Vector3(...(preset === "overview" && portrait ? ([0.8, 11, 8.2] as const) : p.pos));
-    const target = new THREE.Vector3(...p.target);
+    const target = new THREE.Vector3(...PRESETS[preset].target);
+    let pos = new THREE.Vector3(...PRESETS[preset].pos);
+    if (portrait && preset === "overview") {
+      // look along the room's long side so the whole layout fits a tall screen
+      pos = new THREE.Vector3(11.5, 13.5, 3.2);
+    } else if (portrait && preset === "top") {
+      pos = new THREE.Vector3(0.01, 21, 0);
+    }
+    const visible = Math.max(120, size.height - inset.top - inset.bottom);
+    let k = 1;
+    if (preset !== "guest") {
+      // pull back until the room fits the visible band
+      const fitH = portrait ? 1.0 : 1;
+      k = (size.height / visible) * fitH * (portrait ? 1.05 : size.width < 900 ? 1.15 : 1);
+    }
     if (k !== 1) pos.sub(target).multiplyScalar(k).add(target);
     anim.current = { pos, target, t: 0 };
-  }, [preset, nonce, size.width, size.height]);
+  }, [preset, nonce, size.width, size.height, inset.top, inset.bottom]);
 
   useFrame((_, dt) => {
     const a = anim.current;

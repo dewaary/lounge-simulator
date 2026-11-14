@@ -29,6 +29,8 @@ interface State {
   date: string;
   camera: CameraPreset;
   cameraNonce: number;
+  viewInset: { top: number; bottom: number }; // px of the canvas covered by UI (mobile)
+  setViewInset: (v: { top: number; bottom: number }) => void;
 
   openPicker: (open: boolean) => void;
   startEvent: (id: EventId) => void;
@@ -138,6 +140,11 @@ export const useSim = create<State>((set, get) => ({
   date: "",
   camera: "overview",
   cameraNonce: 0,
+  viewInset: { top: 0, bottom: 0 },
+  setViewInset: (v) => {
+    const c = get().viewInset;
+    if (Math.abs(c.top - v.top) > 2 || Math.abs(c.bottom - v.bottom) > 2) set({ viewInset: v });
+  },
 
   openPicker: (open) => set({ pickerOpen: open }),
   startEvent: (id) => {
@@ -214,6 +221,7 @@ export interface GuestSpot {
   z: number;
   rot: number;
   seated: boolean;
+  sofa?: boolean; // seated on a sofa (hands in lap, no table in front)
 }
 
 const rotate = (x: number, z: number, r: number) => ({
@@ -228,7 +236,7 @@ export function worldSpots(items: Placed[]) {
     const t = ITEMS[it.type];
     for (const s of t.seats) {
       const p = rotate(s.x, s.z, it.rot);
-      seats.push({ x: it.x + p.x, z: it.z + p.z, rot: s.rot + it.rot, seated: true });
+      seats.push({ x: it.x + p.x, z: it.z + p.z, rot: s.rot + it.rot, seated: true, sofa: it.type === "sofaSet" });
     }
     for (const s of t.standing) {
       const p = rotate(s.x, s.z, it.rot);
