@@ -20,3 +20,8 @@ npm run build      # static export ke folder out/ (upload ke Hostinger / subdoma
 ## Catatan prototype
 - Ruangan The Lounge masih ukuran perkiraan (16 × 8 m) dan dibuat dengan kode, belum dari foto asli.
 - Harga dan nomor WhatsApp masih contoh (lihat `VENUE` di `lib/data.ts`).
+
+## Scroll story (intro)
+- Frame video ada di `public/story/f_001…f_326.webp` (3 klip AI digabung, 12 fps, 1152×648) + `K4/K5/K6.webp` (still, diberi efek zoom).
+- Timeline & teks per adegan: `components/Story.tsx` (`VIDEO_END`, `STILL_RANGES`, `CAPTIONS`).
+- Kalau klip 4 & 5 sudah jadi: gabungkan ke video, ekstrak ulang frame, naikkan `FRAME_COUNT`, lalu `VIDEO_END` jadi ±0.9 dan hapus still yang sudah tergantikan.
